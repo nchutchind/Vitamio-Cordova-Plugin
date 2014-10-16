@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+		xmlns="http://apache.org/cordova/ns/plugins/1.0"
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		id="com.hutchind.cordova.plugins.vitamio"
+		version="0.0.1">
+
+	<name>Vitamio</name>
+
+	<description>
+		This plugin allows you to launch a fullscreen streaming player for audio or video on Android using software decoding via Vitamio.
+	</description>
+
+	<author>Nicholas Hutchind</author>
+
+	<license>MIT</license>
+
+	<keywords>Streaming, Media, Video, Audio, Android, Vitamio</keywords>
+
+	<repo>https://github.com/nchutchind/Vitamio-Cordova-Plugin.git</repo>
+
+	<issue>https://github.com/nchutchind/Vitamio-Cordova-Plugin/issues</issue>
+
+	<engines>
+		<engine name="cordova" version=">=3.0.0" />
+	</engines>
+
+	<js-module src="www/Vitamio.js" name="Vitamio">
+		<clobbers target="vitamio" />
+	</js-module>
+
+	<!-- android -->
+	<platform name="android">
+		<config-file target="res/xml/config.xml" parent="/*">
+			<feature name="Vitamio">
+				<param name="android-package" value="com.hutchind.cordova.plugins.vitamio.Vitamio" />
+			</feature>
+		</config-file>
+		<config-file target="AndroidManifest.xml" parent="/manifest">
+			<uses-permission android:name="android.permission.INTERNET" />
+			<uses-permission android:name="android.permission.WAKE_LOCK" />
+			<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+		</config-file>
+		<config-file target="AndroidManifest.xml" parent="/manifest/application">
+			<activity 	android:configChanges="orientation|screenSize"
+						android:name="com.hutchind.cordova.plugins.vitamio.VitamioMedia"
+						android:label="Vitamio Media" />
+			 <activity
+				android:name="io.vov.vitamio.activity.InitActivity"
+				android:configChanges="orientation|keyboardHidden|navigation"
+				android:launchMode="singleTop"
+				android:theme="@android:style/Theme.NoTitleBar"
+				android:windowSoftInputMode="stateAlwaysHidden" />
+		</config-file>
+		<config-file target="res/values/colors.xml" parent="/resources">
+			<color name="transparent">#00000000</color>
+			<color name="mediacontroller_bg_pressed">#ff53c1bd</color>
+			<color name="mediacontroller_bg">#99000000</color>
+		</config-file>
+		<config-file target="res/values/styles.xml" parent="/resources">
+			<style name="MediaController_SeekBar" parent="android:Widget.SeekBar">
+				<item name="android:progressDrawable">@drawable/scrubber_progress_horizontal_holo_dark</item>
+				<item name="android:indeterminateDrawable">@drawable/scrubber_progress_horizontal_holo_dark</item>
+				<item name="android:minHeight">13dip</item>
+				<item name="android:maxHeight">13dip</item>
+				<item name="android:thumb">@drawable/scrubber_control_selector_holo</item>
+				<item name="android:thumbOffset">16dip</item>
+				<item name="android:paddingLeft">16dip</item>
+				<item name="android:paddingRight">16dip</item>
+			</style>
+
+			<style name="MediaController_Text">
+				<item name="android:textColor">#ffffffff</item>
+				<item name="android:textSize">14sp</item>
+				<item name="android:textStyle">bold</item>
+			</style>
+		</config-file>
+		<config-file target="res/values/strings.xml" parent="/resources">
+			<string name="vitamio_library_app_name">VitamioLibrary</string>
+			<string name="vitamio_init_decoders">Initializing decoders…</string>
+			<string name="permission_group_tools_label">Vitamio tools</string>
+			<string name="permission_group_tools_description">Access Vitamio package and resources.</string>
+			<string name="permission_receive_messages_label">Receive Vitamio messages</string>
+			<string name="permission_receive_messages_description">Receive all broadcasts from Vitamio service.</string>
+			<string name="permission_write_providers_label">Write Vitamio providers</string>
+			<string name="permission_write_providers_description">Delete, update or create new items in Vitamio providers.</string>
+			<string name="VideoView_error_title">Cannot play video</string>
+			<string name="VideoView_error_text_invalid_progressive_playback">Sorry, this video is not valid for streaming to this device.</string>
+			<string name="VideoView_error_text_unknown">Sorry, this video cannot be played.</string>
+			<string name="VideoView_error_button">OK</string>
+			<string name="mediacontroller_play_pause">Play/Pause</string>
+		</config-file>
+		<source-file src="src/android/Vitamio.java" target-dir="src/com/hutchind/cordova/plugins/vitamio" />
+		<source-file src="src/android/VitamioMedia.java" target-dir="src/com/hutchind/cordova/plugins/vitamio" />
+		<source-file src="src/android/ImageLoadTask.java" target-dir="src/com/hutchind/cordova/plugins/vitamio" />
+		<source-file src="src/android/ImageLoadTaskListener.java" target-dir="src/com/hutchind/cordova/plugins/vitamio" />
+		<source-file src="src/android/libs/vitamio.jar" target-dir="libs" />
+		<source-file src="src/android/libs/armeabi/libvinit.so" target-dir="libs/armeabi" />
+		<source-file src="src/android/libs/armeabi-v7a/libvinit.so" target-dir="libs/armeabi-v7a" />
+		<source-file src="src/android/libs/x86/libvinit.so" target-dir="libs/x86" />
+		<source-file src="src/android/res/raw/libarm.so" target-dir="res/raw" />
+		<source-file src="src/android/res/drawable/mediacontroller_pause.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/mediacontroller_play.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_control_disabled_holo.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_control_focused_holo.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_control_normal_holo.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_control_pressed_holo.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_control_selector_holo.xml" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_primary_holo.9.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_progress_horizontal_holo_dark.xml" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_secondary_holo.9.png" target-dir="res/drawable" />
+		<source-file src="src/android/res/drawable/scrubber_track_holo_dark.9.png" target-dir="res/drawable" />
+		<info>
+<![CDATA[
+You may need to make the following changes yourself.
+
+In res/values/colors.xml, add the following lines inside the <resources> node:
+	<color name="transparent">#00000000</color>
+	<color name="mediacontroller_bg_pressed">#ff53c1bd</color>
+	<color name="mediacontroller_bg">#99000000</color>
+
+In res/values/styles.xml, add the following lines inside the <resources> node:
+	<style name="MediaController_SeekBar" parent="android:Widget.SeekBar">
+		<item name="android:progressDrawable">@drawable/scrubber_progress_horizontal_holo_dark</item>
+		<item name="android:indeterminateDrawable">@drawable/scrubber_progress_horizontal_holo_dark</item>
+		<item name="android:minHeight">13dip</item>
+		<item name="android:maxHeight">13dip</item>
+		<item name="android:thumb">@drawable/scrubber_control_selector_holo</item>
+		<item name="android:thumbOffset">16dip</item>
+		<item name="android:paddingLeft">16dip</item>
+		<item name="android:paddingRight">16dip</item>
+	</style>
+
+	<style name="MediaController_Text">
+		<item name="android:textColor">#ffffffff</item>
+		<item name="android:textSize">14sp</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+
+In res/values/strings.xml, add the following lines inside the <resources> node:
+	<string name="vitamio_library_app_name">VitamioLibrary</string>
+	<string name="vitamio_init_decoders">Initializing decoders…</string>
+	<string name="permission_group_tools_label">Vitamio tools</string>
+	<string name="permission_group_tools_description">Access Vitamio package and resources.</string>
+	<string name="permission_receive_messages_label">Receive Vitamio messages</string>
+	<string name="permission_receive_messages_description">Receive all broadcasts from Vitamio service.</string>
+	<string name="permission_write_providers_label">Write Vitamio providers</string>
+	<string name="permission_write_providers_description">Delete, update or create new items in Vitamio providers.</string>
+	<string name="VideoView_error_title">Cannot play video</string>
+	<string name="VideoView_error_text_invalid_progressive_playback">Sorry, this video is not valid for streaming to this device.</string>
+	<string name="VideoView_error_text_unknown">Sorry, this video cannot be played.</string>
+	<string name="VideoView_error_button">OK</string>
+	<string name="mediacontroller_play_pause">Play/Pause</string>
+]]>
+		</info>
+	</platform>
+</plugin>
