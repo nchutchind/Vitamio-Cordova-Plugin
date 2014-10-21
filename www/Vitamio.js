@@ -4,11 +4,25 @@ function Vitamio() {
 
 Vitamio.prototype.playAudio = function (url, options) {
 	options = options || {};
-	cordova.exec(options.successCallback || null, options.errorCallback || null, "Vitamio", "playAudio", [url, options]);
+	var handleSuccessCallback = function(playbackInfo) {
+		if (options.successCallback && playbackInfo.isDone) {
+			options.successCallback(playbackInfo);
+		} else if (options.progressCallback && !playbackInfo.isDone) {
+			options.progressCallback(playbackInfo);
+		}
+	}
+	cordova.exec(handleSuccessCallback, options.errorCallback || null, "Vitamio", "playAudio", [url, options]);
 };
 Vitamio.prototype.playVideo = function (url, options) {
 	options = options || {};
-	cordova.exec(options.successCallback || null, options.errorCallback || null, "Vitamio", "playVideo", [url, options]);
+	var handleSuccessCallback = function(playbackInfo) {
+		if (options.successCallback && playbackInfo.isDone) {
+			options.successCallback(playbackInfo);
+		} else if (options.progressCallback && !playbackInfo.isDone) {
+			options.progressCallback(playbackInfo);
+		}
+	}
+	cordova.exec(handleSuccessCallback, options.errorCallback || null, "Vitamio", "playVideo", [url, options]);
 };
 
 

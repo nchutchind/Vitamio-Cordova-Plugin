@@ -25,15 +25,19 @@ import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.content.Intent;
 
 public class VitamioMedia extends Activity implements ImageLoadTaskListener,
         OnBufferingUpdateListener, OnCompletionListener, OnPreparedListener,
         OnVideoSizeChangedListener, SurfaceHolder.Callback, MediaPlayer.OnErrorListener,
         MediaController.MediaPlayerControl {
 
+    public static final String ACTION_INFO = "com.hutchind.cordova.plugins.vitamio-broadcastVitamioMediaInfo";
     private static final String TAG = "VitamioMedia";
     private static final int DEFAULT_BG_COLOR = Color.BLACK;
     private static final String DEFAULT_BG_SCALE_TYPE = "fit";
+    private static final String MEDIA_TYPE_VIDEO = "video";
+    private static final String MEDIA_TYPE_AUDIO = "audio";
     private Bundle extras;
     private MediaPlayer mMediaPlayer;
     private MediaController mMediaController = null;
@@ -49,7 +53,9 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
     private ImageView.ScaleType bgImageScaleType = ImageView.ScaleType.CENTER;
     private ImageView bgImage = null;
     private int bgColor = DEFAULT_BG_COLOR;
-    private boolean isStreaming = false;
+    private Boolean isStreaming = false;
+    private Boolean mShouldAutoClose = true;
+    private int lastKnownPosition = -1;
 
     @Override
     public void onCreate(Bundle icicle) {
@@ -61,84 +67,89 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         extras = getIntent().getExtras();
-        if (extras.containsKey("isStreaming")) {
-            isStreaming = extras.getBoolean("isStreaming");
-        }
-        mMediaType = extras.getString("type");
 
-        if (mMediaPlayer != null) {
-            mMediaPlayer.release();
-            mMediaPlayer = null;
-        }
-
-        mMediaPlayer = new MediaPlayer(this);
-        mMediaController = new MediaController(this, !isStreaming);
-        mMediaController.setMediaPlayer(this);
-        mMediaPlayer.setOnBufferingUpdateListener(this);
-        mMediaPlayer.setOnCompletionListener(this);
-        mMediaPlayer.setOnErrorListener(this);
-        mMediaPlayer.setOnPreparedListener(this);
-        mMediaPlayer.setOnVideoSizeChangedListener(this);
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-        RelativeLayout relLayout = new RelativeLayout(this);
-
-        if (extras.containsKey("bgColor")) {
-            Log.v(TAG, "bgColor present - " + extras.getString("bgColor"));
-            try {
-                bgColor = Color.parseColor(extras.getString("bgColor"));
-                Log.v(TAG, "Color parsed: " + bgColor);
-            } catch (Exception e) {
-                Log.v(TAG, "Error parsing color");
-                Log.e(TAG, e.toString());
-                bgColor = DEFAULT_BG_COLOR;
+        // handle extras
+        if (extras == null) {
+            wrapItUp(RESULT_CANCELED, "Error: No options provided");
+        } else {
+            if (extras.containsKey("isStreaming")) {
+               isStreaming = extras.getBoolean("isStreaming");
             }
-        }
-        relLayout.setBackgroundColor(bgColor);
 
-        RelativeLayout.LayoutParams relLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-        relLayoutParam.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        mMediaView = new SurfaceView(this);
-        mMediaView.setLayoutParams(relLayoutParam);
-        relLayout.addView(mMediaView);
+            if (extras.containsKey("shouldAutoClose")) {
+                mShouldAutoClose = extras.getBoolean("shouldAutoClose");
+            }
 
-        mProgressBar = new ProgressBar(this);
-        mProgressBar.setIndeterminate(true);
-        mProgressBar.setVisibility(View.VISIBLE);
-        RelativeLayout.LayoutParams pblp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        pblp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        mProgressBar.setLayoutParams(pblp);
-        relLayout.addView(mProgressBar);
-        mProgressBar.bringToFront();
+            mMediaType = extras.getString("type");
+            if (mMediaType == null) mMediaType = MEDIA_TYPE_VIDEO;
 
-        mMediaController.setAnchorView(relLayout);
-        mMediaController.setEnabled(true);
-        if (mMediaType.equalsIgnoreCase("audio")) {
-            mMediaView.setBackgroundColor(bgColor);
-            if (extras.containsKey("background")) {
-                if (extras.containsKey("bgImageScaleType")) {
-                    String scaleType = extras.getString("bgImageScaleType");
-                    if (scaleType.equals("fit")) {
-                        bgImageScaleType = ImageView.ScaleType.FIT_CENTER;
-                    } else if (scaleType.equals("stretch")) {
-                        bgImageScaleType = ImageView.ScaleType.FIT_XY;
-                    } else {
-                        bgImageScaleType = ImageView.ScaleType.CENTER;
-                    }
+            mMediaPlayer = new MediaPlayer(this);
+            mMediaController = new MediaController(this, !isStreaming);
+            mMediaController.setMediaPlayer(this);
+            mMediaPlayer.setOnBufferingUpdateListener(this);
+            mMediaPlayer.setOnCompletionListener(this);
+            mMediaPlayer.setOnErrorListener(this);
+            mMediaPlayer.setOnPreparedListener(this);
+            mMediaPlayer.setOnVideoSizeChangedListener(this);
+            setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
+            RelativeLayout relLayout = new RelativeLayout(this);
+
+            if (extras.containsKey("bgColor")) {
+                try {
+                    bgColor = Color.parseColor(extras.getString("bgColor"));
+                } catch (Exception e) {
+                    Log.v(TAG, "Error parsing color");
+                    Log.e(TAG, e.toString());
+                    bgColor = DEFAULT_BG_COLOR;
                 }
-                bgImage = new ImageView(this);
-                new ImageLoadTask(extras.getString("background"), this).execute(null, null);
-                RelativeLayout.LayoutParams bgImageLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
-                bgImageLayoutParam.addRule(RelativeLayout.CENTER_IN_PARENT);
-                bgImage.setLayoutParams(bgImageLayoutParam);
-                bgImage.setScaleType(bgImageScaleType);
-                relLayout.addView(bgImage);
             }
+            relLayout.setBackgroundColor(bgColor);
+
+            RelativeLayout.LayoutParams relLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+            relLayoutParam.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+            mMediaView = new SurfaceView(this);
+            mMediaView.setLayoutParams(relLayoutParam);
+            relLayout.addView(mMediaView);
+
+            mProgressBar = new ProgressBar(this);
+            mProgressBar.setIndeterminate(true);
+            mProgressBar.setVisibility(View.VISIBLE);
+            RelativeLayout.LayoutParams pblp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            pblp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+            mProgressBar.setLayoutParams(pblp);
+            relLayout.addView(mProgressBar);
+            mProgressBar.bringToFront();
+
+            mMediaController.setAnchorView(relLayout);
+            mMediaController.setEnabled(true);
+            if (mMediaType.equalsIgnoreCase(MEDIA_TYPE_AUDIO)) {
+                mMediaView.setBackgroundColor(bgColor);
+                if (extras.containsKey("background")) {
+                    if (extras.containsKey("bgImageScaleType")) {
+                        String scaleType = extras.getString("bgImageScaleType");
+                        if (scaleType.equals("fit")) {
+                            bgImageScaleType = ImageView.ScaleType.FIT_CENTER;
+                        } else if (scaleType.equals("stretch")) {
+                            bgImageScaleType = ImageView.ScaleType.FIT_XY;
+                        } else {
+                            bgImageScaleType = ImageView.ScaleType.CENTER;
+                        }
+                    }
+                    bgImage = new ImageView(this);
+                    new ImageLoadTask(extras.getString("background"), this).execute(null, null);
+                    RelativeLayout.LayoutParams bgImageLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+                    bgImageLayoutParam.addRule(RelativeLayout.CENTER_IN_PARENT);
+                    bgImage.setLayoutParams(bgImageLayoutParam);
+                    bgImage.setScaleType(bgImageScaleType);
+                    relLayout.addView(bgImage);
+                }
+            }
+            setContentView(relLayout, relLayoutParam);
+            holder = mMediaView.getHolder();
+            holder.addCallback(this);
+            holder.setFormat(PixelFormat.RGBA_8888);
         }
-        setContentView(relLayout, relLayoutParam);
-        holder = mMediaView.getHolder();
-        holder.addCallback(this);
-        holder.setFormat(PixelFormat.RGBA_8888);
     }
 
     @Override
@@ -149,33 +160,30 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
     }
 
     public void onBufferingUpdate(MediaPlayer arg0, int percent) {
-        Log.d(TAG, "onBufferingUpdate percent:" + percent);
+        //Log.d(TAG, "onBufferingUpdate percent:" + percent);
     }
 
-    public void onCompletion(MediaPlayer arg0) {
+    public void onCompletion(MediaPlayer mp) {
         Log.d(TAG, "onCompletion called");
+        if (mShouldAutoClose) {
+            wrapItUp(RESULT_OK, null);
+        }
     }
 
     public void onPrepared(MediaPlayer mediaplayer) {
         Log.d(TAG, "onPrepared called");
         mIsMediaReadyToBePlayed = true;
-        if (mIsMediaReadyToBePlayed) {
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            start();
             if (mMediaController != null)
                 mMediaController.show();
-            start();
             mProgressBar.setVisibility(View.GONE);
         }
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        releaseMediaPlayer();
-        doCleanUp();
-    }
-
-    @Override
     protected void onDestroy() {
+        Log.v(TAG,"onDestroy");
         super.onDestroy();
         releaseMediaPlayer();
         doCleanUp();
@@ -233,6 +241,8 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
     }
 
     private void fixMediaSize() {
+        if (mMediaPlayer == null || !mIsMediaReadyToBePlayed)
+            return;
         int width = mMediaPlayer.getVideoWidth();
         int height = mMediaPlayer.getVideoHeight();
         Display display = getWindowManager().getDefaultDisplay();
@@ -281,7 +291,9 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
         sb.append(" (" + what + ") ");
         sb.append(extra);
         Log.e(TAG, sb.toString());
-        finish();
+
+        wrapItUp(RESULT_CANCELED, sb.toString());
+
         return true;
     }
 
@@ -294,43 +306,108 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        Log.v(TAG, "SCREEN TOUCHED");
         if (mIsMediaReadyToBePlayed) {
-            Log.v(TAG, "NOT NULL");
             mMediaController.show();
         }
-        Log.v(TAG, "Is Controller showing? " + mMediaController.isShowing());
         return false;
     }
 
     @Override
+    public void onBackPressed() {
+        wrapItUp(RESULT_OK, null);
+    }
+
+    private void wrapItUp(int resultCode, String message) {
+        Intent intent = new Intent();
+        if (message != null) {
+            intent.putExtra("message", message);
+        }
+        if (!isStreaming) {
+            try {
+                intent.putExtra("pos", getCurrentPosition());
+            } catch (Exception e) {
+                intent.putExtra("pos", -1);
+            }
+        }
+        setResult(resultCode, intent);
+        finish();
+    }
+
+    @Override
     public void start() {
-        mMediaPlayer.start();
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            mMediaPlayer.start();
+            Intent intent = new Intent();
+            intent.setAction(ACTION_INFO);
+            intent.putExtra("action", "start");
+            if (!isStreaming) intent.putExtra("pos", getCurrentPosition());
+            sendBroadcast(intent);
+        } else {
+            Log.e(TAG, "MediaPlayer is not instantiated yet.");
+        }
+    }
+
+    public void stop() {
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            mMediaPlayer.stop();
+            Intent intent = new Intent();
+            intent.setAction(ACTION_INFO);
+            intent.putExtra("action", "stop");
+            if (!isStreaming) intent.putExtra("pos", getCurrentPosition());
+            sendBroadcast(intent);
+        } else {
+            Log.e(TAG, "MediaPlayer is not instantiated yet.");
+        }
     }
 
     @Override
     public void pause() {
-        mMediaPlayer.pause();
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            mMediaPlayer.pause();
+            Intent intent = new Intent();
+            intent.setAction(ACTION_INFO);
+            intent.putExtra("action", "pause");
+            if (!isStreaming) intent.putExtra("pos", getCurrentPosition());
+            sendBroadcast(intent);
+        } else {
+            Log.e(TAG, "MediaPlayer is not instantiated yet.");
+        }
     }
 
     @Override
     public int getDuration() {
-        return (int) mMediaPlayer.getDuration();
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            return (int) mMediaPlayer.getDuration();
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public int getCurrentPosition() {
-        return (int) mMediaPlayer.getCurrentPosition();
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            return (int) mMediaPlayer.getCurrentPosition();
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public void seekTo(int i) {
-        mMediaPlayer.seekTo(i);
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            mMediaPlayer.seekTo(i);
+        } else {
+            Log.e(TAG, "MediaPlayer is not instantiated yet.");
+        }
     }
 
     @Override
     public boolean isPlaying() {
-        return mMediaPlayer.isPlaying();
+        if (mMediaPlayer != null && mIsMediaReadyToBePlayed) {
+            return mMediaPlayer.isPlaying();
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -345,12 +422,12 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
 
     @Override
     public boolean canSeekBackward() {
-        return false;
+        return !isStreaming;
     }
 
     @Override
     public boolean canSeekForward() {
-        return false;
+        return !isStreaming;
     }
 
     @Override
