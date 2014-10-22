@@ -125,19 +125,19 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
             mMediaController.setEnabled(true);
             if (mMediaType.equalsIgnoreCase(MEDIA_TYPE_AUDIO)) {
                 mMediaView.setBackgroundColor(bgColor);
-                if (extras.containsKey("background")) {
+                if (extras.containsKey("bgImage")) {
                     if (extras.containsKey("bgImageScaleType")) {
                         String scaleType = extras.getString("bgImageScaleType");
-                        if (scaleType.equals("fit")) {
+                        if (scaleType.equalsIgnoreCase("fit")) {
                             bgImageScaleType = ImageView.ScaleType.FIT_CENTER;
-                        } else if (scaleType.equals("stretch")) {
+                        } else if (scaleType.equalsIgnoreCase("stretch")) {
                             bgImageScaleType = ImageView.ScaleType.FIT_XY;
                         } else {
                             bgImageScaleType = ImageView.ScaleType.CENTER;
                         }
                     }
                     bgImage = new ImageView(this);
-                    new ImageLoadTask(extras.getString("background"), this).execute(null, null);
+                    new ImageLoadTask(extras.getString("bgImage"), this).execute(null, null);
                     RelativeLayout.LayoutParams bgImageLayoutParam = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
                     bgImageLayoutParam.addRule(RelativeLayout.CENTER_IN_PARENT);
                     bgImage.setLayoutParams(bgImageLayoutParam);
@@ -213,7 +213,6 @@ public class VitamioMedia extends Activity implements ImageLoadTaskListener,
 
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "surfaceCreated called");
-        Log.d(TAG, "background? " + extras.containsKey("background"));
         setupMedia();
     }
 
