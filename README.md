@@ -81,6 +81,6 @@ There are no video-only options.
 * bgColor - (optional) HEX value for the background color of the screen. Defaults to "#000000"
 * bgImage - (optional) URL for an image to display on the screen while audio plays. No default.
 * bgImageScale - (optional) Scaling technique to use for the bgImage. May be one of the following:
-  * fit - (recommended) fits the image on the screen, enlarging it while respecting the image aspect ratio
+  * fit - (default) fits the image on the screen, enlarging it while respecting the image aspect ratio
   * stretch - stretches the image so it fills all available screen space, disregarding the image aspect ratio
-  * center - (default) centers the image on the screen, keeping it at the original image size
+  * center - centers the image on the screen, keeping it at the original image size
