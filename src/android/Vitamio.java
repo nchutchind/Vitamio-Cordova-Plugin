@@ -97,7 +97,7 @@ public class Vitamio extends CordovaPlugin {
 		JSONObject obj = new JSONObject();
 		try {
 			obj.put("action", mediaIntent.getStringExtra("action"));
-			if (intent.hasExtra("pos")) {
+			if (mediaIntent.hasExtra("pos")) {
 				obj.put("pos", getTimeString(mediaIntent.getIntExtra("pos", -1)));
 			}
 			obj.put("isDone", false);
