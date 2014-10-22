@@ -112,7 +112,7 @@
 		<source-file src="src/android/res/drawable/scrubber_track_holo_dark.9.png" target-dir="res/drawable" />
 		<info>
 <![CDATA[
-You may need to make the following changes yourself.
+You may need to make the following changes yourself. These files also exist in the GitHub repo at src/android/res/values/
 
 In res/values/colors.xml, add the following lines inside the <resources> node:
 	<color name="transparent">#00000000</color>
