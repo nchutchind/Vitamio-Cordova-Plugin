@@ -20,6 +20,9 @@ This plugin allows you to stream audio and video in a fullscreen, native player 
 
 ## 2. Usage
 
+Adding the plugin to a cordova project, make sure to be in the project root directory before executing the following command
+cordova plugin add com.hutchind.cordova.plugins.vitamio
+
 ```javascript
   var videoUrl = VIDEO_URL;
 
